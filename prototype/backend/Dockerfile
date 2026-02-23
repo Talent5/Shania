@@ -28,5 +28,6 @@ ENV PYTHONUNBUFFERED=1
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:5000/health')" || exit 1
 
-# Run with Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "app:app"]
+# Run with Gunicorn - optimized for 512MB RAM limit
+# Using 1 worker with preload to reduce memory usage
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--preload", "--timeout", "120", "app:app"]
