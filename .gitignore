@@ -1,0 +1,96 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Node.js / React
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+/prototype/frontend/build/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Data files (keep model files but exclude raw data)
+prototype/backend/data/*.csv
+*.csv
+!prototype/backend/test_samples.csv
+
+# Development notebooks
+*.ipynb
+
+# Test files
+test_*.py
+test_*.csv
+*_test.py
+
+# Office temporary files
+~$*.docx
+~$*.pptx
+~$*.xlsx
+
+# Model files (uncomment to exclude large models)
+# *.pkl
+# *.h5
+# *.pth
+
+# Keep important files
+!prototype/backend/adhf_rf_model.pkl
