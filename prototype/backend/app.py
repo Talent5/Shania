@@ -16,8 +16,9 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True  # Required for cross-site cookies
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
-# CORS configuration - allow frontend URL from environment
-allowed_origins = os.environ.get('FRONTEND_URL', 'http://localhost:3000').split(',')
+# CORS configuration - allow one or many frontend URLs from environment
+frontend_url_env = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+allowed_origins = [origin.strip() for origin in frontend_url_env.split(',') if origin.strip()]
 CORS(app, supports_credentials=True, origins=allowed_origins)
 
 # Load Model
