@@ -68,6 +68,19 @@ logs/
 *.temp
 .cache/
 
+# Documents and media
+*.md
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
+*.bmp
+*.tif
+*.tiff
+
 # Data files (keep model files but exclude raw data)
 prototype/backend/data/*.csv
 *.csv
