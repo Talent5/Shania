@@ -18,7 +18,11 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
 # CORS configuration - allow one or many frontend URLs from environment
 frontend_url_env = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-allowed_origins = [origin.strip() for origin in frontend_url_env.split(',') if origin.strip()]
+allowed_origins = [
+    origin.strip().rstrip('/')
+    for origin in frontend_url_env.split(',')
+    if origin.strip()
+]
 CORS(app, supports_credentials=True, origins=allowed_origins)
 
 # Load Model
