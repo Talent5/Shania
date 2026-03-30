@@ -4,6 +4,7 @@ import pandas as pd
 import joblib
 import numpy as np
 import os
+import re
 from datetime import timedelta
 from auth import (
     init_db, create_user, verify_user, login_required,
@@ -23,6 +24,9 @@ allowed_origins = [
     for origin in frontend_url_env.split(',')
     if origin.strip()
 ]
+# Allow any vercel.app domain (like preview deployments)
+allowed_origins.append(re.compile(r"^https://.*\.vercel\.app$"))
+
 CORS(app, supports_credentials=True, origins=allowed_origins)
 
 # Load Model
