@@ -22,7 +22,6 @@ function Dashboard({ user, onLogout }) {
     Hypertension: 1,
     AtrialFib: 0,
     COPD: 0,
-    Ethnicity: 'WHITE',
     AdmissionType: 'EMERGENCY',
     Insurance: 'Medicare'
   });
@@ -255,17 +254,6 @@ function Dashboard({ user, onLogout }) {
               <select name="COPD" value={formData.COPD} onChange={handleChange}>
                 <option value={0}>No</option>
                 <option value={1}>Yes</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label><User size={16} /> Ethnicity</label>
-              <select name="Ethnicity" value={formData.Ethnicity} onChange={handleChange}>
-                <option value="WHITE">White</option>
-                <option value="BLACK">Black</option>
-                <option value="HISPANIC">Hispanic</option>
-                <option value="ASIAN">Asian</option>
-                <option value="OTHER">Other</option>
               </select>
             </div>
 
