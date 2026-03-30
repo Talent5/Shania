@@ -89,7 +89,7 @@ function Dashboard({ user, onLogout }) {
   return (
     <div className="container" style={{ maxWidth: '1400px' }}>
       
-      <!-- Header -->
+      {/* Header */}
       <header className="dashboard-header">
         <div className="header-title-container">
           <div className="icon-wrapper">
@@ -112,14 +112,14 @@ function Dashboard({ user, onLogout }) {
         </div>
       </header>
 
-      <!-- Main Grid Layout -->
+      {/* Main Grid Layout */}
       <div className="dashboard-grid">
         
-        <!-- Left Column: Input Form -->
+        {/* Left Column: Input Form */}
         <div className="card" style={{ marginBottom: 0 }}>
           <form onSubmit={handleSubmit}>
             
-            <!-- Section 1: Demographics -->
+            {/* Section 1: Demographics */}
             <div className="form-section">
               <h3 className="section-title"><User size={20}/> Demographics & Admission</h3>
               <div className="form-row">
@@ -174,7 +174,7 @@ O�X�[��[�]\OH��[X�\���\H�
             </div>
           )}
 
-          <!-- History Sidebar -->
+          {/* History Sidebar */}
           <div className="history-sidebar">
             <h2 className="history-header">
               <History size={20} color="#64748b" /> Recent Evaluations
