@@ -183,7 +183,6 @@ def predict():
         input_data['COPD'] = int(data.get('COPD', 0))
 
         # Categorical dummies setup
-        ethnicity = data.get('Ethnicity', 'WHITE')
         admission = data.get('AdmissionType', 'EMERGENCY')
         insurance = data.get('Insurance', 'Medicare')
 
@@ -202,13 +201,7 @@ def predict():
                 df_input[feature] = 0
 
         # Set One-Hot values manually based on input strings
-        # Example: 'Ethnicity_ASIAN' - Need to match exactly how pandas named them
         # Pandas names: "Column_Value"
-        
-        eth_col = f'Ethnicity_{ethnicity}'
-        if eth_col in model_features:
-            df_input[eth_col] = 1
-            
         adm_col = f'AdmissionType_{admission}'
         if adm_col in model_features:
             df_input[adm_col] = 1
