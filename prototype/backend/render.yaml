@@ -12,6 +12,8 @@ services:
         value: production
       - key: FLASK_DEBUG
         value: False
+      - key: FRONTEND_URL
+        value: https://shania-one.vercel.app,https://shania-e7t47ps3e-talent5s-projects.vercel.app
       - key: SECRET_KEY
         generateValue: true
       - key: PYTHON_VERSION
