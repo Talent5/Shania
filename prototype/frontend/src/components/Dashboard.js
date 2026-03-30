@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  Activity, Heart, AlertCircle, TrendingUp, User,
-  Droplet, LogOut, History, Clock, FileText, Stethoscope,
-  ChevronRight, ArrowRight
+  Activity, AlertCircle, TrendingUp, User,
+  Droplet, LogOut, History, Stethoscope,
+  ArrowRight
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
