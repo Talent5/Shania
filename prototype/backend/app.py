@@ -42,6 +42,21 @@ except Exception as e:
 numerical_cols = ['Age', 'SystolicBP', 'DiastolicBP', 'HeartRate', 'RespRate', 'SpO2', 'BNP', 'Creatinine', 'Sodium', 'Hemoglobin']
 binary_cols = ['Gender', 'Diabetes', 'Hypertension', 'AtrialFib', 'COPD']
 
+
+def _find_matching_onehot_feature(model_features, prefix, value):
+    """Match incoming category values to trained one-hot feature names."""
+    target = str(value).strip().lower()
+    start = f"{prefix}_"
+
+    for feature in model_features:
+        if not feature.startswith(start):
+            continue
+        category_value = feature[len(start):].strip().lower()
+        if category_value == target:
+            return feature
+
+    return None
+
 @app.route('/')
 def home():
     return jsonify({
@@ -165,57 +180,48 @@ def predict():
 
     try:
         data = request.json
-        input_data = {}
+        model_features = getattr(model, 'feature_names_in_', None)
+        if model_features is None:
+            return jsonify({'error': 'Model does not include feature names. Re-train and save model with feature metadata.'}), 500
 
-        # 1. Map incoming JSON to raw features
-        input_data['Age'] = float(data.get('Age', 65))
-        input_data['SystolicBP'] = float(data.get('SystolicBP', 120))
-        input_data['DiastolicBP'] = float(data.get('DiastolicBP', 80))
-        input_data['HeartRate'] = float(data.get('HeartRate', 80))
-        input_data['RespRate'] = float(data.get('RespRate', 20))
-        input_data['SpO2'] = float(data.get('SpO2', 98))
-        input_data['BNP'] = float(data.get('BNP', 500))
-        input_data['Creatinine'] = float(data.get('Creatinine', 1.2))
-        input_data['Sodium'] = float(data.get('Sodium', 138))
-        input_data['Hemoglobin'] = float(data.get('Hemoglobin', 12)) 
-        
-        # Binary Mappings
-        input_data['Gender'] = 1 if data.get('Gender') == 'M' else 0
-        input_data['Diabetes'] = int(data.get('Diabetes', 0))
-        input_data['Hypertension'] = int(data.get('Hypertension', 0))
-        input_data['AtrialFib'] = int(data.get('AtrialFib', 0))
-        input_data['COPD'] = int(data.get('COPD', 0))
+        required_numeric = numerical_cols
+        required_binary = ['Gender', 'Diabetes', 'Hypertension', 'AtrialFib', 'COPD']
+        required_categories = ['AdmissionType', 'Insurance']
 
-        # Categorical dummies setup
-        admission = data.get('AdmissionType', 'EMERGENCY')
-        insurance = data.get('Insurance', 'Medicare')
+        missing = [
+            key for key in (required_numeric + required_binary + required_categories)
+            if key not in data
+        ]
+        if missing:
+            return jsonify({'error': f"Missing required fields: {', '.join(missing)}"}), 400
 
-        df_input = pd.DataFrame([input_data])
+        input_row = {feature: 0.0 for feature in model_features}
 
-        # Get the feature names expected by the model
-        if hasattr(model, 'feature_names_in_'):
-            model_features = model.feature_names_in_
-        else:
-            # Fallback if specific version of sklearn doesn't save feature_names_in_
-            return jsonify({'error': 'Model does not have feature names stored. Re-train model.'}), 500
+        # 1. Map continuous features directly
+        for col in required_numeric:
+            if col in input_row:
+                input_row[col] = float(data[col])
 
-        # Initialize all model features to 0
-        for feature in model_features:
-            if feature not in df_input.columns:
-                df_input[feature] = 0
+        # 2. Map binary clinical features directly
+        input_row['Gender'] = 1.0 if str(data['Gender']).strip().upper() == 'M' else 0.0
+        for col in required_binary[1:]:
+            if col in input_row:
+                input_row[col] = float(int(data[col]))
 
-        # Set One-Hot values manually based on input strings
-        # Pandas names: "Column_Value"
-        adm_col = f'AdmissionType_{admission}'
-        if adm_col in model_features:
-            df_input[adm_col] = 1
-            
-        ins_col = f'Insurance_{insurance}'
-        if ins_col in model_features:
-            df_input[ins_col] = 1
+        # 3. Map one-hot categorical values by matching trained feature names
+        selected_categories = {
+            'AdmissionType': data['AdmissionType'],
+            'Insurance': data['Insurance']
+        }
+        unmatched_categories = {}
+        for prefix, value in selected_categories.items():
+            matched_feature = _find_matching_onehot_feature(model_features, prefix, value)
+            if matched_feature:
+                input_row[matched_feature] = 1.0
+            else:
+                unmatched_categories[prefix] = value
 
-        # Reorder to match model
-        df_final = df_input[model_features]
+        df_final = pd.DataFrame([input_row], columns=model_features)
 
         # Predict
         prediction = model.predict(df_final)[0]
@@ -224,9 +230,15 @@ def predict():
         result = {
             'prediction': int(prediction),
             'probability': float(probability),
-            'risk_level': 'High' if probability > 0.5 else 'Low',
+            'risk_level': 'High' if int(prediction) == 1 else 'Low',
             'message': 'Patient is at high risk of 30-day readmission.' if prediction == 1 else 'Patient has a low risk of readmission.'
         }
+
+        if unmatched_categories:
+            result['category_mapping_warning'] = (
+                'Some categories were not present in model features and were ignored: '
+                + ', '.join([f"{k}={v}" for k, v in unmatched_categories.items()])
+            )
         
         # Save prediction to user's history
         user_id = session.get('user_id')
