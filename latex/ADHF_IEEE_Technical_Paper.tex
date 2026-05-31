@@ -1,0 +1,159 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{hyperref}
+
+\title{Leveraging Machine Learning for Predicting Hospital Readmissions in Acute Decompensated Heart Failure (ADHF)}
+
+\author{
+\IEEEauthorblockN{Shania K T Ruwende}
+\IEEEauthorblockA{
+\textit{Dept. of Analytics and Informatics} \\
+\textit{Faculty of Computer Engineering Informatics and Communications}\\
+\textit{University of Zimbabwe}\\
+Harare, Zimbabwe}
+\and
+\IEEEauthorblockN{Supervisor: Dr Kwangwa}
+\IEEEauthorblockA{
+\textit{Dept. of Analytics and Informatics} \\
+\textit{University of Zimbabwe}\\
+Harare, Zimbabwe}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Hospital systems in resource-constrained environments require readmission intelligence that is both accurate and clinically interpretable. This paper presents an explainable machine learning framework for 30-day all-cause readmission prediction among Acute Decompensated Heart Failure (ADHF) patients. The proposed system integrates a CRISP-DM guided data pipeline, robust preprocessing for imbalanced clinical data, comparative model training, and SHAP-based explainability in a single operational workflow. The implementation was realized as an end-to-end prototype with a Flask backend and React frontend for authenticated clinical decision support. Comparative evaluation across Logistic Regression, Random Forest, XGBoost, and a conventional LACE baseline indicates that the proposed explainable ML stack achieves strong discrimination while preserving clinical transparency through both global and patient-level feature attributions. Architectural and implementation evidence shows that the framework is deployable on standard institutional hardware without specialized infrastructure. These findings support practical adoption of explainable AI for ADHF readmission risk stratification in low-resource healthcare settings.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Explainable AI, ADHF, Readmission Prediction, Heart Failure, SHAP, Random Forest, Clinical Decision Support, Resource-Constrained Environments.
+\end{IEEEkeywords}
+
+\section{Introduction}
+Thirty-day readmission after acute decompensated heart failure remains a major quality-of-care and cost burden globally, with heightened impact in constrained health systems where bed capacity, follow-up infrastructure, and specialist coverage are limited \cite{ref01_foroutan_2023,ref02_wauye_2025}. In many operational settings, clinicians need tools that can identify high-risk patients at discharge while providing transparent justification for intervention priorities.
+
+Machine learning has improved predictive modeling for readmission, but practical uptake is frequently constrained by three issues: weak ADHF-specific tailoring, class-imbalance sensitivity, and limited interpretability \cite{ref04_alnomasy_2025,ref11_huang_2021,ref17_grossmanliu_2021}. Explainability has therefore moved from optional analysis to an operational requirement in healthcare AI, particularly for high-stakes decisions \cite{ref09_allgaier_2023,ref10_band_2023}.
+
+This paper addresses these gaps by presenting a complete technical implementation of an explainable ADHF readmission workflow tailored to resource-constrained environments. The key contributions are:
+\begin{enumerate}
+    \item an end-to-end architecture combining clinical data engineering, predictive modeling, and explainability outputs;
+    \item a comparative evaluation framework including Logistic Regression, Random Forest, XGBoost, and LACE baseline alignment;
+    \item an interpretation layer that converts model outputs into clinically actionable, auditable explanations.
+\end{enumerate}
+
+\section{Methodology Framework}
+\subsection{CRISP-DM-Oriented Process Design}
+The study adopts the CRISP-DM framework to ensure reproducible and iterative development from clinical problem definition to deployment-oriented prototyping. The six applied phases are: clinical understanding, data understanding, data preparation, modeling, evaluation, and deployment mapping.
+
+\subsection{Dataset and Variable Strategy}
+The workflow targets ADHF-specific readmission prediction using de-identified critical-care style records aligned with MIMIC/eICU schema conventions. The binary target is 30-day all-cause readmission. Predictor groups include demographics, vital signs, laboratory biomarkers, and comorbidity/frailty-related indicators, selected based on heart-failure readmission evidence \cite{ref05_zhang_2024,ref15_sabouri_2023,ref24_mohanty_2022}.
+
+\subsection{Leakage-Aware Preprocessing Pipeline}
+A strict leakage-prevention strategy is used: all transformations are fitted on training data and only applied to validation/test partitions. The preprocessing flow includes missing-value imputation, outlier management, categorical encoding, numerical scaling, and mixed class-imbalance handling (SMOTE with stratified sampling), following current recommendations for imbalanced clinical prediction \cite{ref20_zhao_2020}.
+
+\section{System Architecture and Implementation}
+\subsection{Overall Architecture}
+The system is organized as four modules: (i) data ingestion and preprocessing, (ii) predictive modeling, (iii) SHAP explainability generation, and (iv) clinical output presentation. Figure~\ref{fig:overall} shows the end-to-end architecture.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.98\linewidth]{figures/chapter4/figure_4_1_overall_architecture.png}
+\caption{Overall ADHF readmission system architecture.}
+\label{fig:overall}
+\end{figure}
+
+\subsection{Predictive Model Design}
+A comparative model strategy was implemented with Logistic Regression, Random Forest, and XGBoost. Random Forest was used as a strong operational core for tabular clinical signals due to nonlinear interaction capture and stable behavior under heterogeneous feature spaces. Figure~\ref{fig:model} presents the predictive model design.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.98\linewidth]{figures/chapter4/figure_4_2_model_design.png}
+\caption{Predictive modeling and benchmarking design.}
+\label{fig:model}
+\end{figure}
+
+For an ensemble with $T$ trees, class-1 probability is estimated as:
+\begin{equation}
+\hat{p}(x)=\frac{1}{T}\sum_{t=1}^{T}p_t(y=1\mid x),
+\end{equation}
+with class decision
+\begin{equation}
+\hat{y}=\mathbb{I}(\hat{p}(x)\geq\tau),
+\end{equation}
+where $\tau$ is the decision threshold.
+
+\subsection{Explainability Integration}
+SHAP is integrated as a first-class component for global and local interpretability. For feature $i$, Shapley attribution is:
+\begin{equation}
+\phi_i=\sum_{S\subseteq F\setminus\{i\}}\frac{|S|!(|F|-|S|-1)!}{|F|!}\left[f(S\cup\{i\})-f(S)\right].
+\end{equation}
+
+The explanation workflow is shown in Figure~\ref{fig:xai}. This design ensures that each risk score is accompanied by directionally interpretable feature contributions suitable for clinical discussion and discharge planning.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.98\linewidth]{figures/chapter4/figure_4_3_xai_flow.png}
+\caption{SHAP integration flow for global and local explanations.}
+\label{fig:xai}
+\end{figure}
+
+\subsection{Prototype Realization}
+Implementation was deployed as an authenticated decision-support prototype with:
+\begin{enumerate}
+    \item Flask API for preprocessing, inference, and prediction logging;
+    \item React frontend for clinician-facing interaction;
+    \item model-serving integration for near real-time risk scoring;
+    \item history and role-aware access control for practical workflow support.
+\end{enumerate}
+
+\section{Experimental Setup}
+\subsection{Partitioning and Validation}
+The data workflow uses stratified train-test partitioning with cross-validation during tuning. Final evaluation is performed on a holdout test set to reduce optimism bias.
+
+\subsection{Compared Models}
+The following models are evaluated:
+\begin{enumerate}
+    \item Logistic Regression (baseline ML);
+    \item Random Forest;
+    \item XGBoost;
+    \item LACE score (conventional non-ML benchmark).
+\end{enumerate}
+
+\subsection{Evaluation Metrics}
+To avoid accuracy-only bias, evaluation includes Accuracy, Precision, Recall, F1-score, AUROC, and AUPRC. The metric focus prioritizes detection of high-risk patients while maintaining clinically meaningful precision-recall balance.
+
+\section{Results and Technical Analysis}
+\subsection{Comparative Performance Summary}
+Across model families, tree-based learners demonstrated stronger discrimination than linear baseline under ADHF feature heterogeneity, with improved handling of nonlinear interactions and clinically coupled variables. The selected explainable ML configuration produced robust predictive performance suitable for discharge risk triage and outperformed the conventional LACE-only baseline in the implemented benchmark pathway.
+
+\subsection{Explainability Findings}
+Global SHAP analysis identified strong contributions from established heart-failure risk factors, including biomarker burden, renal function indicators, hemodynamic instability, and comorbidity profiles. Local explanations provided patient-specific risk decomposition, enabling clinicians to distinguish dominant risk-increasing versus risk-mitigating contributors for each prediction. These patterns were directionally consistent with current evidence on ADHF readmission drivers \cite{ref05_zhang_2024,ref08_luo_2024,ref18_zang_2026}.
+
+\subsection{Operational Implications in Low-Resource Settings}
+The architecture demonstrates that explainable readmission analytics can be executed with standard institutional computing resources by using modular preprocessing, efficient ensemble inference, and post-hoc SHAP generation without specialized HPC infrastructure. This supports practical deployment pathways for hospitals and training institutions with constrained technical capacity.
+
+\section{Discussion}
+The study confirms that explainability and predictive utility are not mutually exclusive in ADHF readmission modeling. Integrating SHAP directly into the inference pathway improves model auditability and stakeholder trust while preserving performance benefits of modern ML approaches. The explicit benchmark against LACE also strengthens translational relevance by framing improvement relative to a familiar clinical baseline.
+
+Key technical strengths include leakage-aware preprocessing, imbalance-sensitive training, and end-to-end traceability from architecture to interface. Remaining challenges include external validation on additional local hospital cohorts, calibration analysis under shifting prevalence, and prospective workflow studies to measure clinician adoption effects.
+
+\section{Conclusion}
+This paper presented an IEEE-style technical implementation of an explainable machine learning framework for 30-day ADHF readmission prediction in resource-constrained clinical environments. The system combines robust data engineering, comparative modeling, and SHAP-based interpretation in one deployable pipeline. Results indicate that the approach provides clinically actionable risk stratification with transparent explanation support, making it suitable for practical decision-support integration in low-resource healthcare settings.
+
+\section*{Acknowledgment}
+The author acknowledges the Department of Analytics and Informatics, University of Zimbabwe, and Dr Kwanga for academic supervision and technical guidance.
+
+\bibliographystyle{ieeetr}
+\bibliography{references_all}
+
+\end{document}

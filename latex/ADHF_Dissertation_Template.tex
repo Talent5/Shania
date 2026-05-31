@@ -1,0 +1,204 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{setspace}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{tocloft}
+\usepackage{cite}
+
+\geometry{margin=1in}
+\onehalfspacing
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\centering}
+  {CHAPTER \thechapter}{1em}{\Large}
+
+\begin{document}
+
+% ---------------------------
+% Title Page
+% ---------------------------
+\begin{titlepage}
+\centering
+
+{\large FACULTY OF COMPUTER ENGINEERING INFORMATICS AND COMMUNICATIONS\par}
+\vspace{0.5em}
+{\large DEPARTMENT OF ANALYTICS AND INFORMATICS\par}
+\vspace{2.5em}
+
+{\Large\bfseries LEVERAGING MACHINE LEARNING FOR PREDICTING HOSPITAL READMISSIONS IN ACUTE DECOMPENSATED HEART FAILURE (ADHF)\par}
+\vspace{2em}
+
+{\large BY\par}
+\vspace{1em}
+{\Large\bfseries SHANIA K T RUWENDE\par}
+\vspace{2em}
+
+{\large SUPERVISED BY:\par}
+\vspace{0.5em}
+{\Large\bfseries DR KWANGWA\par}
+\vspace{2.5em}
+
+{\large THIS CAPSTONE RESEARCH PROJECT WAS SUBMITTED TO THE UNIVERSITY OF ZIMBABWE IN PARTIAL FULFILMENT OF THE BACHELOR OF SCIENCE (HONOURS) DEGREE IN DATA SCIENCE AND INFORMATICS\par}
+\vfill
+
+{\large 2026\par}
+
+\end{titlepage}
+
+% ---------------------------
+% Front Matter
+% ---------------------------
+\pagenumbering{roman}
+
+\chapter*{DECLARATION}
+\addcontentsline{toc}{chapter}{DECLARATION}
+I, Shania K T Ruwende, declare that this dissertation titled ``Leveraging Machine Learning for Predicting Hospital Readmissions in Acute Decompensated Heart Failure (ADHF)'' is my own work. It has been carried out under the supervision of Dr. Kwangwa. It has not been submitted in any form for any other degree or diploma at this or any other university.
+
+Where other sources of information have been used, they have been duly acknowledged through proper referencing. I further declare that I have completed this research project sincerely and to the best of my knowledge and ability.
+
+\vspace{2em}
+Shania K T Ruwende
+
+\vspace{2em}
+Date: \underline{\hspace{5cm}}
+
+\chapter*{COPYRIGHT}
+\addcontentsline{toc}{chapter}{COPYRIGHT}
+I, Shania K T Ruwende, the author of this dissertation entitled ``Leveraging Machine Learning for Predicting Hospital Readmissions in Acute Decompensated Heart Failure (ADHF)'', hereby grant the University of Zimbabwe the non-exclusive right to reproduce this dissertation in whole or in part, in any format, for research, teaching, and academic archiving.
+
+I understand that the University of Zimbabwe may make and distribute copies of this work for academic purposes only. However, I reserve all other rights, including the right to publish this work in journals, books, or any other medium, in whole or in part. No part of this dissertation may be reproduced for commercial purposes without my prior written consent.
+
+\vspace{2em}
+Signed: \underline{\hspace{5cm}} Shania K T Ruwende
+
+\vspace{2em}
+Date: \underline{\hspace{5cm}}
+
+\chapter*{DEDICATION}
+\addcontentsline{toc}{chapter}{DEDICATION}
+I dedicate this dissertation firstly to God, who has protected me through and through, and to my loving family, especially my guardians, for their unwavering support, sacrifices, and encouragement throughout my academic journey.
+
+To my supervisors, lecturers, and friends who believed in me and walked this path with me, thank you.
+
+This work is also dedicated to all healthcare workers in Zimbabwe and across sub-Saharan Africa who continue to serve with dedication despite limited resources. May this research contribute, in some small way, toward better patient care and improved health outcomes.
+
+\chapter*{ABSTRACT}
+\addcontentsline{toc}{chapter}{ABSTRACT}
+Hospital readmissions among patients with Acute Decompensated Heart Failure (ADHF) remain a critical challenge for healthcare systems, particularly in resource-constrained environments. This study develops and evaluates an explainable machine learning framework for predicting 30-day all-cause hospital readmissions in ADHF patients.
+
+Using a CRISP-DM guided methodology, the research integrates data preprocessing, class-imbalance handling, comparative model training, and explainable AI into a single decision-support pipeline. The predictive core compares Logistic Regression, Random Forest, and XGBoost, with the conventional LACE score used as a clinical benchmark. To improve transparency and clinician trust, SHAP-based explanations are provided at both global and individual patient levels.
+
+The implementation is realized as a practical prototype architecture suitable for low-resource settings, combining model inference, risk categorization, and explanation outputs in a usable workflow. The findings indicate that explainable machine learning can provide clinically meaningful risk stratification while maintaining interpretability and deployment feasibility. This work contributes an ADHF-specific, transparent, and context-aware approach intended to support earlier intervention, improved discharge planning, and reduction of preventable readmissions.
+
+\chapter*{ACKNOWLEDGEMENTS}
+\addcontentsline{toc}{chapter}{ACKNOWLEDGEMENTS}
+I wish to express my heartfelt appreciation to my supervisor, Dr. Nancy Kwangwa, for her expert guidance, insightful comments, and continuous support throughout this research.
+
+My sincere thanks also go to the academic staff of the Department of Analytics and Informatics for their valuable contributions to my learning.
+
+I am profoundly grateful to my family for their unconditional love, patience, and encouragement. To my friends and colleagues, thank you for your moral support.
+
+I acknowledge the MIMIC dataset providers for making critical care data openly accessible, which enabled this study.
+
+Above all, I thank God for the strength and opportunity to complete this dissertation.
+
+\vspace{2em}
+Shania K T Ruwende
+
+\tableofcontents
+\clearpage
+
+% ---------------------------
+% Main Matter
+% ---------------------------
+\pagenumbering{arabic}
+
+\chapter{INTRODUCTION}
+\section{Introduction}
+This chapter introduces the project context, problem definition, aim, objectives, research questions, scope, significance, and work plan for an explainable ADHF readmission prediction framework.
+
+\section{Background}
+Hospital readmission in heart failure remains a high-impact clinical and systems challenge, with stronger burden in low-resource contexts where specialist care and post-discharge follow-up are constrained.
+
+\section{Problem Statement}
+Existing models are often not ADHF-specific, not sufficiently interpretable for clinicians, and are rarely designed for real-world deployment in sub-Saharan African healthcare environments.
+
+\section{Aim}
+To develop and evaluate an explainable machine learning framework for predicting 30-day hospital readmission among ADHF patients.
+
+\section{Research Objectives}
+\begin{enumerate}
+    \item Collect and preprocess clinically relevant ADHF data.
+    \item Perform exploratory analysis to identify key risk patterns.
+    \item Develop and compare machine learning models for 30-day readmission prediction.
+    \item Integrate SHAP-based explainability for clinician-facing interpretation.
+    \item Design a prototype decision-support workflow suitable for low-resource hospitals.
+\end{enumerate}
+
+\chapter{LITERATURE REVIEW}
+\section{Introduction}
+This chapter reviews contemporary studies on machine learning readmission prediction, explainable AI in healthcare, and research gaps specific to ADHF and resource-constrained deployment.
+
+\section{Review of Relevant Literature}
+Ensemble methods and explainability techniques have advanced readmission prediction, but performance transferability and practical clinical integration remain limited in low-resource settings.
+
+\section{Research Gaps}
+Key gaps include limited ADHF-specific modeling, class-imbalance challenges, insufficient clinician-oriented interpretability, and weak end-to-end deployment design for African healthcare contexts.
+
+\chapter{RESEARCH METHODOLOGY}
+\section{Introduction}
+The methodology follows CRISP-DM with quantitative experimental design, reproducibility safeguards, and ethics-aware clinical AI practice.
+
+\section{Methodological Framework}
+Phases include clinical understanding, data understanding, preparation, modeling, evaluation, and deployment mapping.
+
+\section{Experimental Procedure}
+Preprocessing, stratified data partitioning, model training, and SHAP analysis are implemented with leakage prevention and fixed random seeds.
+
+\chapter{PROCESS AND MODEL DESIGN}
+\section{Introduction}
+This chapter presents the architecture and technical design of the ADHF readmission prediction pipeline.
+
+\section{System Architecture}
+The architecture includes data preprocessing, predictive engine, explainability layer, and decision-support output module.
+
+\section{Model Design}
+The predictive stack compares Logistic Regression, Random Forest, and XGBoost, with LACE baseline benchmarking and metric-driven selection.
+
+\section{Explainable AI Integration}
+SHAP is used for global and local interpretation to produce auditable, clinician-usable explanations.
+
+\chapter{RESULTS AND DISCUSSION}
+\section{Predictive Performance}
+Include final results tables (AUROC, AUPRC, Recall, F1, Precision, Accuracy) and model comparison against LACE baseline.
+
+\section{Explainability Findings}
+Include SHAP global summary, local patient examples, and clinical plausibility discussion.
+
+\section{Discussion}
+Discuss implications, limitations, generalizability, and relevance to Zimbabwean clinical settings.
+
+\chapter{CONCLUSION AND RECOMMENDATIONS}
+\section{Conclusion}
+Summarize key technical and clinical contributions.
+
+\section{Recommendations}
+Provide practical deployment and future research recommendations, including external validation and prospective clinical studies.
+
+% ---------------------------
+% References
+% ---------------------------
+\clearpage
+\bibliographystyle{ieeetr}
+\bibliography{references_all}
+
+\end{document}
