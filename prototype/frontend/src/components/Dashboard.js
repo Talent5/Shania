@@ -134,11 +134,8 @@ function Dashboard({ user, onLogout }) {
     onLogout();
   };
 
-  const featureData = [
-    { name: 'BNP', value: 0.35 }, { name: 'Age', value: 0.25 },
-    { name: 'Creatinine', value: 0.15 }, { name: 'Sys BP', value: 0.10 },
-    { name: 'Sodium', value: 0.08 }, { name: 'Heart Rate', value: 0.05 },
-  ];
+  const featureData = result?.feature_impacts?.length ? result.feature_impacts : [];
+  const primaryFeature = result?.primary_feature || featureData[0];
 
   const initals = user?.full_name
     ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -401,7 +398,11 @@ function Dashboard({ user, onLogout }) {
                   </div>
                   <div className="result-meta-item">
                     <span className="label">Primary Feature</span>
-                    <span className="value">BNP ({featureData[0].value * 100}%)</span>
+                    <span className="value">
+                      {primaryFeature
+                        ? `${primaryFeature.name} (${Number(primaryFeature.percent || primaryFeature.value * 100).toFixed(0)}%)`
+                        : 'Pending'}
+                    </span>
                   </div>
                 </motion.div>
 
@@ -412,7 +413,7 @@ function Dashboard({ user, onLogout }) {
                   transition={{ delay: 0.5 }}
                 >
                   <h4 className="chart-title">
-                    <BarChart3 size={15} /> Feature Importance
+                    <BarChart3 size={15} /> Feature Impact
                   </h4>
                   <div style={{ width: '100%', height: 140 }}>
                     <ResponsiveContainer>

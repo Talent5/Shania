@@ -42,6 +42,31 @@ except Exception as e:
     model = None
 
 MODEL_METRICS_PATH = os.environ.get('MODEL_METRICS_PATH', 'model_metrics.json')
+DATA_PATH = os.environ.get('MODEL_DATA_PATH', 'data/mimic_adhf_raw.csv')
+feature_reference_stats = None
+
+FEATURE_LABELS = {
+    'Age': 'Age',
+    'Gender': 'Gender',
+    'SystolicBP': 'Sys BP',
+    'DiastolicBP': 'Dia BP',
+    'HeartRate': 'Heart Rate',
+    'RespRate': 'Resp Rate',
+    'SpO2': 'SpO2',
+    'BNP': 'BNP',
+    'Creatinine': 'Creatinine',
+    'Sodium': 'Sodium',
+    'Hemoglobin': 'Hemoglobin',
+    'Diabetes': 'Diabetes',
+    'Hypertension': 'Hypertension',
+    'AtrialFib': 'Atrial Fib',
+    'COPD': 'COPD',
+    'HIV': 'HIV',
+    'AdmissionType_URGENT': 'Urgent Admission',
+    'Insurance_Medicaid': 'Medicaid',
+    'Insurance_Medicare': 'Medicare',
+    'Insurance_Private': 'Private Insurance',
+}
 
 
 def load_model_metrics():
@@ -62,6 +87,78 @@ def load_model_metrics():
 
     metrics['available'] = True
     return metrics
+
+
+def load_feature_reference_stats():
+    """Load training-data medians/IQRs used to make patient-specific impact scores."""
+    global feature_reference_stats
+    if feature_reference_stats is not None:
+        return feature_reference_stats
+
+    stats = {}
+    try:
+        df = pd.read_csv(DATA_PATH, usecols=lambda col: col in numerical_cols)
+        for col in numerical_cols:
+            if col not in df:
+                continue
+            series = pd.to_numeric(df[col], errors='coerce').dropna()
+            if series.empty:
+                continue
+            q1 = series.quantile(0.25)
+            q3 = series.quantile(0.75)
+            iqr = q3 - q1
+            stats[col] = {
+                'median': float(series.median()),
+                'scale': float(iqr if iqr > 0 else series.std() or 1.0)
+            }
+    except Exception as e:
+        print(f"Unable to load feature reference stats: {e}")
+
+    feature_reference_stats = stats
+    return feature_reference_stats
+
+
+def _feature_label(feature):
+    return FEATURE_LABELS.get(feature, feature.replace('_', ' '))
+
+
+def calculate_patient_feature_impacts(model, model_features, input_row, limit=6):
+    """Rank features for this patient using model importance weighted by patient values."""
+    importances = getattr(model, 'feature_importances_', None)
+    if importances is None:
+        return []
+
+    reference_stats = load_feature_reference_stats()
+    impacts = []
+    for feature, importance in zip(model_features, importances):
+        raw_value = float(input_row.get(feature, 0.0) or 0.0)
+
+        if feature in reference_stats:
+            stats = reference_stats[feature]
+            distance = abs(raw_value - stats['median']) / stats['scale']
+            patient_weight = 0.25 + min(distance, 3.0)
+        elif feature.startswith(('AdmissionType_', 'Insurance_')) or feature in binary_cols or feature == 'HIV':
+            patient_weight = 1.0 if raw_value else 0.05
+        else:
+            patient_weight = 1.0
+
+        impact = float(importance) * patient_weight
+        if impact > 0:
+            impacts.append({
+                'feature': feature,
+                'name': _feature_label(feature),
+                'value': impact,
+                'raw_value': raw_value,
+            })
+
+    impacts.sort(key=lambda item: item['value'], reverse=True)
+    top_impacts = impacts[:limit]
+    max_impact = top_impacts[0]['value'] if top_impacts else 0
+    for item in top_impacts:
+        item['percent'] = float((item['value'] / max_impact) * 100) if max_impact else 0.0
+        item['value'] = float(item['percent'] / 100)
+
+    return top_impacts
 
 # Expected order of columns MUST match X_final.columns from the notebook
 # Based on the notebook's preprocessing:
@@ -256,12 +353,15 @@ def predict():
         # Predict
         prediction = model.predict(df_final)[0]
         probability = model.predict_proba(df_final)[0][1]
+        feature_impacts = calculate_patient_feature_impacts(model, model_features, input_row)
 
         result = {
             'prediction': int(prediction),
             'probability': float(probability),
             'risk_level': 'High' if int(prediction) == 1 else 'Low',
-            'message': 'Patient is at high risk of 30-day readmission.' if prediction == 1 else 'Patient has a low risk of readmission.'
+            'message': 'Patient is at high risk of 30-day readmission.' if prediction == 1 else 'Patient has a low risk of readmission.',
+            'feature_impacts': feature_impacts,
+            'primary_feature': feature_impacts[0] if feature_impacts else None
         }
 
         if unmatched_categories:
