@@ -419,7 +419,7 @@ function Dashboard({ user, onLogout }) {
                     <ResponsiveContainer>
                       <BarChart data={featureData} layout="vertical" margin={{ top: 0, right: 8, left: -8, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                        <XAxis type="number" hide />
+                        <XAxis type="number" domain={[0, 1]} hide />
                         <YAxis
                           dataKey="name" type="category"
                           style={{ fontSize: '0.75rem', fontWeight: 500 }}

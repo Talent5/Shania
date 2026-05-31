@@ -124,46 +124,47 @@ def _feature_label(feature):
     return FEATURE_LABELS.get(feature, feature.replace('_', ' '))
 
 
-def calculate_patient_feature_impacts(model, model_features, input_row, limit=6):
-    """Rank features for this patient using model importance weighted by patient values."""
-    importances = getattr(model, 'feature_importances_', None)
-    if importances is None:
-        return []
+def _baseline_value_for_feature(feature, reference_stats):
+    if feature in reference_stats:
+        return reference_stats[feature]['median']
+    if feature in binary_cols or feature == 'HIV':
+        return 0.0
+    return 0.0
 
+
+def calculate_patient_feature_impacts(model, model_features, input_row, limit=6):
+    """Rank features by the actual probability change caused by this patient's values."""
     reference_stats = load_feature_reference_stats()
+    current_df = pd.DataFrame([input_row], columns=model_features)
+    current_probability = float(model.predict_proba(current_df)[0][1])
     impacts = []
-    for feature, importance in zip(model_features, importances):
+    for feature in model_features:
         if feature in DISPLAY_IMPACT_EXCLUDED_FEATURES or feature.startswith(DISPLAY_IMPACT_EXCLUDED_PREFIXES):
             continue
 
         raw_value = float(input_row.get(feature, 0.0) or 0.0)
+        baseline_value = _baseline_value_for_feature(feature, reference_stats)
+        if raw_value == baseline_value:
+            continue
 
-        if feature in reference_stats:
-            stats = reference_stats[feature]
-            distance = abs(raw_value - stats['median']) / stats['scale']
-            patient_weight = 0.25 + min(distance, 3.0)
-        elif feature.startswith(('AdmissionType_', 'Insurance_')) or feature in binary_cols or feature == 'HIV':
-            patient_weight = 1.0 if raw_value else 0.05
-        else:
-            patient_weight = 1.0
+        baseline_row = dict(input_row)
+        baseline_row[feature] = baseline_value
+        baseline_df = pd.DataFrame([baseline_row], columns=model_features)
+        baseline_probability = float(model.predict_proba(baseline_df)[0][1])
+        probability_change = abs(current_probability - baseline_probability)
 
-        impact = float(importance) * patient_weight
-        if impact > 0:
+        if probability_change > 0:
             impacts.append({
                 'feature': feature,
                 'name': _feature_label(feature),
-                'value': impact,
+                'value': float(probability_change),
+                'percent': float(probability_change * 100),
                 'raw_value': raw_value,
+                'baseline_value': float(baseline_value),
             })
 
     impacts.sort(key=lambda item: item['value'], reverse=True)
-    top_impacts = impacts[:limit]
-    max_impact = top_impacts[0]['value'] if top_impacts else 0
-    for item in top_impacts:
-        item['percent'] = float((item['value'] / max_impact) * 100) if max_impact else 0.0
-        item['value'] = float(item['percent'] / 100)
-
-    return top_impacts
+    return impacts[:limit]
 
 # Expected order of columns MUST match X_final.columns from the notebook
 # Based on the notebook's preprocessing:
