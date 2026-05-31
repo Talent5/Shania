@@ -11,8 +11,7 @@ import {
   Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { API_URL, clearAuthToken, getAuthHeaders } from '../auth';
 
 const stagger = {
   hidden: {},
@@ -89,12 +88,16 @@ function Dashboard({ user, onLogout }) {
     setError('');
     setResult(null);
     try {
-      const response = await axios.post(`${API_URL}/predict`, formData, { withCredentials: true });
+      const response = await axios.post(`${API_URL}/predict`, formData, {
+        withCredentials: true,
+        headers: getAuthHeaders()
+      });
       setResult(response.data);
       fetchHistory();
     } catch (err) {
       if (err.response?.status === 401) {
         setError('Session expired. Please login again.');
+        clearAuthToken();
         setTimeout(() => onLogout(), 2000);
       } else {
         setError(err.response?.data?.error || 'Failed to fetch prediction.');
@@ -106,7 +109,10 @@ function Dashboard({ user, onLogout }) {
 
   const fetchHistory = async () => {
     try {
-      const response = await axios.get(`${API_URL}/history?limit=5`, { withCredentials: true });
+      const response = await axios.get(`${API_URL}/history?limit=5`, {
+        withCredentials: true,
+        headers: getAuthHeaders()
+      });
       setHistory(response.data.history);
     } catch (err) {
       console.error('Failed to fetch history:', err);
@@ -114,8 +120,16 @@ function Dashboard({ user, onLogout }) {
   };
 
   const handleLogout = async () => {
-    try { await axios.post(`${API_URL}/auth/logout`, {}, { withCredentials: true }); onLogout(); }
-    catch (err) { onLogout(); }
+    try {
+      await axios.post(`${API_URL}/auth/logout`, {}, {
+        withCredentials: true,
+        headers: getAuthHeaders()
+      });
+    } catch (err) {
+      // Ignore logout errors and clear the client state anyway.
+    }
+    clearAuthToken();
+    onLogout();
   };
 
   const featureData = [

@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Mail, Lock, AlertCircle, LogIn, Activity, Heart, TrendingUp, Shield, Stethoscope } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { API_URL } from '../auth';
 
 const stagger = {
   hidden: {},
@@ -38,7 +37,7 @@ function Login({ onSuccess, onSwitchToSignup }) {
     setLoading(true);
     try {
       const response = await axios.post(`${API_URL}/auth/login`, formData, { withCredentials: true });
-      if (response.data.user) onSuccess(response.data.user);
+      if (response.data.user) onSuccess(response.data.user, response.data.auth_token);
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
     } finally {

@@ -5,8 +5,7 @@ import { Activity } from 'lucide-react';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Dashboard from './components/Dashboard';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { API_URL, clearAuthToken, getAuthHeaders, getAuthToken, setAuthToken } from './auth';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -19,24 +18,36 @@ function App() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await axios.get(`${API_URL}/auth/me`, { withCredentials: true });
+      const token = getAuthToken();
+      const response = await axios.get(`${API_URL}/auth/me`, {
+        withCredentials: true,
+        headers: {
+          ...getAuthHeaders(),
+          ...(token ? {} : {})
+        }
+      });
       if (response.data.user) {
         setUser(response.data.user);
         setView('dashboard');
       }
     } catch (err) {
+      clearAuthToken();
       console.log('Not authenticated');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLoginSuccess = (userData) => {
+  const handleLoginSuccess = (userData, authToken) => {
+    if (authToken) {
+      setAuthToken(authToken);
+    }
     setUser(userData);
     setView('dashboard');
   };
 
   const handleLogout = () => {
+    clearAuthToken();
     setUser(null);
     setView('login');
   };

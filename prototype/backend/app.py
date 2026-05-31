@@ -8,13 +8,16 @@ import re
 from datetime import timedelta
 from auth import (
     init_db, create_user, verify_user, login_required,
-    save_prediction, get_user_predictions
+    save_prediction, get_user_predictions, create_auth_token,
+    delete_auth_token, get_token_from_request, apply_user_to_session
 )
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SESSION_COOKIE_SECURE'] = True  # Required for cross-site cookies
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
 # CORS configuration - allow one or many frontend URLs from environment
@@ -128,15 +131,13 @@ def login():
         result = verify_user(email, password)
         
         if result['success']:
-            session.permanent = True
-            session['user_id'] = result['user']['id']
-            session['email'] = result['user']['email']
-            session['full_name'] = result['user']['full_name']
-            session['role'] = result['user']['role']
+            apply_user_to_session(result['user'])
+            auth_token = create_auth_token(result['user']['id'])
             
             return jsonify({
                 'message': 'Login successful',
-                'user': result['user']
+                'user': result['user'],
+                'auth_token': auth_token
             }), 200
         else:
             return jsonify({'error': result['message']}), 401
@@ -147,6 +148,7 @@ def login():
 @app.route('/auth/logout', methods=['POST'])
 def logout():
     """Logout user and clear session"""
+    delete_auth_token(get_token_from_request())
     session.clear()
     return jsonify({'message': 'Logged out successfully'}), 200
 

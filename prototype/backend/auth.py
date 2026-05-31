@@ -8,7 +8,8 @@ from functools import wraps
 from flask import jsonify, session, request
 import sqlite3
 import os
-from datetime import datetime
+import secrets
+from datetime import datetime, timedelta
 
 DATABASE_PATH = 'users.db'
 
@@ -38,6 +39,17 @@ def init_db():
             probability REAL,
             risk_level TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS auth_tokens (
+            token TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP NOT NULL,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     ''')
@@ -77,6 +89,100 @@ def create_user(email, password, full_name, role='clinician'):
         return {'success': True, 'message': 'User created successfully', 'user_id': user_id}
     except Exception as e:
         return {'success': False, 'message': str(e)}
+
+def _now_utc_string():
+    return datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+
+def create_auth_token(user_id, lifetime_days=7):
+    """Create a persistent bearer token for frontend auth."""
+    try:
+        token = secrets.token_urlsafe(32)
+        expires_at = (datetime.utcnow() + timedelta(days=lifetime_days)).strftime('%Y-%m-%d %H:%M:%S')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT INTO auth_tokens (token, user_id, expires_at) VALUES (?, ?, ?)',
+            (token, user_id, expires_at)
+        )
+        conn.commit()
+        conn.close()
+        return token
+    except Exception as e:
+        print(f"Error creating auth token: {e}")
+        return None
+
+def delete_auth_token(token):
+    """Revoke a bearer token."""
+    if not token:
+        return
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM auth_tokens WHERE token = ?', (token,))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error deleting auth token: {e}")
+
+def get_user_from_token(token):
+    """Fetch a user from a bearer token if it is still valid."""
+    if not token:
+        return None
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            '''
+            SELECT t.token, t.expires_at, u.id, u.email, u.full_name, u.role
+            FROM auth_tokens t
+            JOIN users u ON u.id = t.user_id
+            WHERE t.token = ?
+            ''',
+            (token,)
+        )
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return None
+
+        expires_at = datetime.strptime(row['expires_at'], '%Y-%m-%d %H:%M:%S')
+        if expires_at < datetime.utcnow():
+            cursor.execute('DELETE FROM auth_tokens WHERE token = ?', (token,))
+            conn.commit()
+            conn.close()
+            return None
+
+        cursor.execute('UPDATE auth_tokens SET last_used = ? WHERE token = ?', (_now_utc_string(), token))
+        conn.commit()
+        conn.close()
+
+        return {
+            'id': row['id'],
+            'email': row['email'],
+            'full_name': row['full_name'],
+            'role': row['role']
+        }
+    except Exception as e:
+        print(f"Error validating auth token: {e}")
+        return None
+
+def get_token_from_request():
+    """Extract a bearer token from the Authorization header."""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return None
+    return auth_header.split(' ', 1)[1].strip() or None
+
+def apply_user_to_session(user):
+    """Populate the Flask session from a user record."""
+    session.permanent = True
+    session['user_id'] = user['id']
+    session['email'] = user['email']
+    session['full_name'] = user['full_name']
+    session['role'] = user['role']
 
 def verify_user(email, password):
     """Verify user credentials"""
@@ -163,10 +269,13 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return jsonify({'error': 'Authentication required'}), 401
+            token_user = get_user_from_token(get_token_from_request())
+            if token_user:
+                apply_user_to_session(token_user)
+            else:
+                return jsonify({'error': 'Authentication required'}), 401
         return f(*args, **kwargs)
     return decorated_function
 
 # Initialize database on module import
-if not os.path.exists(DATABASE_PATH):
-    init_db()
+init_db()
