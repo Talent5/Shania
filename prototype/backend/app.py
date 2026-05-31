@@ -67,6 +67,8 @@ FEATURE_LABELS = {
     'Insurance_Medicare': 'Medicare',
     'Insurance_Private': 'Private Insurance',
 }
+DISPLAY_IMPACT_EXCLUDED_FEATURES = {'Gender', 'HIV'}
+DISPLAY_IMPACT_EXCLUDED_PREFIXES = ('AdmissionType_', 'Insurance_')
 
 
 def load_model_metrics():
@@ -131,6 +133,9 @@ def calculate_patient_feature_impacts(model, model_features, input_row, limit=6)
     reference_stats = load_feature_reference_stats()
     impacts = []
     for feature, importance in zip(model_features, importances):
+        if feature in DISPLAY_IMPACT_EXCLUDED_FEATURES or feature.startswith(DISPLAY_IMPACT_EXCLUDED_PREFIXES):
+            continue
+
         raw_value = float(input_row.get(feature, 0.0) or 0.0)
 
         if feature in reference_stats:
