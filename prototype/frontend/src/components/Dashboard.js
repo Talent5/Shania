@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_URL, clearAuthToken, getAuthHeaders } from '../auth';
+import { useModelMetrics } from '../modelMetrics';
 
 const stagger = {
   hidden: {},
@@ -69,6 +70,7 @@ function Dashboard({ user, onLogout }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [history, setHistory] = useState([]);
+  const modelMetrics = useModelMetrics();
 
   const highRiskCount = history.filter(h => h.risk_level === 'High').length;
   const lowRiskCount = history.filter(h => h.risk_level === 'Low').length;
@@ -224,7 +226,13 @@ function Dashboard({ user, onLogout }) {
         <StatCard icon={BarChart3} color="blue" value={history.length} label="Total Evaluations" />
         <StatCard icon={AlertTriangle} color="red" value={highRiskCount} label="High Risk Cases" />
         <StatCard icon={CheckCircle} color="green" value={lowRiskCount} label="Low Risk Cases" />
-        <StatCard icon={ShieldAlert} color="purple" value={94} label="Model Accuracy %" formatter={(v) => `${v}%`} />
+        <StatCard
+          icon={ShieldAlert}
+          color="purple"
+          value={modelMetrics.accuracyPercent ?? 0}
+          label="Model Accuracy"
+          formatter={(v) => modelMetrics.accuracyPercent === null ? 'Live' : `${Number(v).toFixed(1)}%`}
+        />
       </motion.div>
 
       {/* Main Grid */}

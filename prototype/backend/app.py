@@ -5,6 +5,7 @@ import joblib
 import numpy as np
 import os
 import re
+import json
 from datetime import timedelta
 from auth import (
     init_db, create_user, verify_user, login_required,
@@ -39,6 +40,28 @@ try:
 except Exception as e:
     print(f"Error loading model: {e}")
     model = None
+
+MODEL_METRICS_PATH = os.environ.get('MODEL_METRICS_PATH', 'model_metrics.json')
+
+
+def load_model_metrics():
+    """Load evaluation metrics produced with the deployed model artifact."""
+    try:
+        with open(MODEL_METRICS_PATH, 'r', encoding='utf-8') as metrics_file:
+            metrics = json.load(metrics_file)
+    except FileNotFoundError:
+        return {
+            'available': False,
+            'error': 'Model metrics file not found. Re-run training to generate model_metrics.json.'
+        }
+    except Exception as e:
+        return {
+            'available': False,
+            'error': f'Unable to load model metrics: {e}'
+        }
+
+    metrics['available'] = True
+    return metrics
 
 # Expected order of columns MUST match X_final.columns from the notebook
 # Based on the notebook's preprocessing:
@@ -84,8 +107,13 @@ def home():
 def health_check():
     return jsonify({
         'status': 'healthy',
-        'model_loaded': model is not None
+        'model_loaded': model is not None,
+        'model_metrics_available': load_model_metrics().get('available', False)
     })
+
+@app.route('/model-metrics')
+def model_metrics():
+    return jsonify(load_model_metrics())
 
 # Authentication Routes
 @app.route('/auth/signup', methods=['POST'])

@@ -5,6 +5,7 @@ import {
   Check, X, Activity, Heart, TrendingUp, Shield, Stethoscope
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useModelMetrics } from '../modelMetrics';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -33,6 +34,7 @@ function Signup({ onSuccess, onSwitchToLogin }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const modelMetrics = useModelMetrics();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -121,7 +123,7 @@ function Signup({ onSuccess, onSwitchToLogin }) {
           </p>
           <div className="brand-stats">
             <div className="brand-stat">
-              <h3>94%</h3>
+              <h3>{modelMetrics.accuracyLabel}</h3>
               <span>Accuracy</span>
             </div>
             <div className="brand-stat">

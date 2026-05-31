@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Mail, Lock, AlertCircle, LogIn, Activity, Heart, TrendingUp, Shield, Stethoscope } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_URL } from '../auth';
+import { useModelMetrics } from '../modelMetrics';
 
 const stagger = {
   hidden: {},
@@ -26,6 +27,7 @@ function Login({ onSuccess, onSwitchToSignup }) {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const modelMetrics = useModelMetrics();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -78,7 +80,7 @@ function Login({ onSuccess, onSwitchToSignup }) {
           </p>
           <div className="brand-stats">
             <div className="brand-stat">
-              <h3>94%</h3>
+              <h3>{modelMetrics.accuracyLabel}</h3>
               <span>Accuracy</span>
             </div>
             <div className="brand-stat">
